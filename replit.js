@@ -617,7 +617,7 @@ roamhusk.showCard = () => {
   }
   if (!roamhusk.showAnswer) {
     roamhusk.styleSheet.insertRule(
-      `.roam-body-main .roam-block-container>.rm-block-children { visbility: hidden }`,
+      `.roam-body-main .roam-block-container>.rm-block-children { visibility: hidden }`,
       roamhusk.showPath ? 5 : 4
     );
 
