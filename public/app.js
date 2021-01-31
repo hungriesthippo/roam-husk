@@ -181,7 +181,7 @@ roamhusk.getNewParameters = (node, signal) => {
 
 // 20210119093326
 // https://raw.githubusercontent.com/jakearchibald/idb-keyval/master/dist/iife/index-min.js
-roamhusk.idbKeyval = (function(t) {
+roamhusk.idbKeyval = (function (t) {
   "use strict";
   function e(t) {
     return new Promise((e, n) => {
@@ -203,7 +203,7 @@ roamhusk.idbKeyval = (function(t) {
     return t(
       "readonly",
       t => (
-        (t.openCursor().onsuccess = function() {
+        (t.openCursor().onsuccess = function () {
           this.result && (n(this.result), this.result.continue());
         }),
         e(t.transaction)
@@ -211,43 +211,43 @@ roamhusk.idbKeyval = (function(t) {
     );
   }
   return (
-    (t.clear = function(t = o()) {
+    (t.clear = function (t = o()) {
       return t("readwrite", t => (t.clear(), e(t.transaction)));
     }),
     (t.createStore = n),
-    (t.del = function(t, n = o()) {
+    (t.del = function (t, n = o()) {
       return n("readwrite", n => (n.delete(t), e(n.transaction)));
     }),
-    (t.entries = function(t = o()) {
+    (t.entries = function (t = o()) {
       const e = [];
       return u(t, t => e.push([t.key, t.value])).then(() => e);
     }),
-    (t.get = function(t, n = o()) {
+    (t.get = function (t, n = o()) {
       return n("readonly", n => e(n.get(t)));
     }),
-    (t.getMany = function(t, n = o()) {
+    (t.getMany = function (t, n = o()) {
       return n("readonly", n => Promise.all(t.map(t => e(n.get(t)))));
     }),
-    (t.keys = function(t = o()) {
+    (t.keys = function (t = o()) {
       const e = [];
       return u(t, t => e.push(t.key)).then(() => e);
     }),
     (t.promisifyRequest = e),
-    (t.set = function(t, n, r = o()) {
+    (t.set = function (t, n, r = o()) {
       return r("readwrite", r => (r.put(n, t), e(r.transaction)));
     }),
-    (t.setMany = function(t, n = o()) {
+    (t.setMany = function (t, n = o()) {
       return n(
         "readwrite",
         n => (t.forEach(t => n.put(t[1], t[0])), e(n.transaction))
       );
     }),
-    (t.update = function(t, n, r = o()) {
+    (t.update = function (t, n, r = o()) {
       return r(
         "readwrite",
         r =>
           new Promise((o, u) => {
-            r.get(t).onsuccess = function() {
+            r.get(t).onsuccess = function () {
               try {
                 r.put(n(this.result), t), o(e(r.transaction));
               } catch (t) {
@@ -257,7 +257,7 @@ roamhusk.idbKeyval = (function(t) {
           })
       );
     }),
-    (t.values = function(t = o()) {
+    (t.values = function (t = o()) {
       const e = [];
       return u(t, t => e.push(t.value)).then(() => e);
     }),
@@ -364,7 +364,7 @@ roamhusk.testingReload = () => {
     roamhusk.removeId("roamhusk-review-button");
     roamhusk.removeId("roamhusk-refresh-button");
     roamhusk.removeId("roamhusk-counter-widget");
-  } catch (e) {}
+  } catch (e) { }
 
   document.getElementsByTagName("head")[0].appendChild(
     Object.assign(document.createElement("script"), {
@@ -407,7 +407,7 @@ roamhusk.goToUid = uid => {
     if (!window.location.href === url) {
       console.log("Trying to set URL second time");
       window.location.assign(url);
-    } else { console.log('Arrived')}
+    } else { console.log('Arrived') }
   }, 100);
 };
 
@@ -544,8 +544,7 @@ roamhusk.formatNode = node =>
   `F: ${roamhusk.fixedLength(node.factor, 4)}  I: ${roamhusk.fixedLength(
     node.interval,
     4
-  )}  D: ${roamhusk.fixedLength(roamhusk.toUSDate(node.due), 12)} ${
-    node.uid
+  )}  D: ${roamhusk.fixedLength(roamhusk.toUSDate(node.due), 12)} ${node.uid
   }: ${roamhusk.fixedLength(node.string, 80)}`;
 
 roamhusk.getSortedDueCards = () => {
