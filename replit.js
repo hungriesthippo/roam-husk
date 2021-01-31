@@ -617,13 +617,13 @@ roamhusk.showCard = () => {
   }
   if (!roamhusk.showAnswer) {
     roamhusk.styleSheet.insertRule(
-      `.roam-body-main .roam-block-container>.rm-block-children { font-size: 0px }`,
+      `.roam-body-main .roam-block-container>.rm-block-children { visbility: hidden }`,
       roamhusk.showPath ? 5 : 4
     );
 
     if (roamhusk.cardsToReview[roamhusk.currentCard].string.includes("::")) {
       roamhusk.styleSheet.insertRule(
-        `.roam-body-main .roam-block-container span { font-size: 0px }`,
+        `.roam-body-main .roam-block-container span { visibility: hidden }`,
         roamhusk.showPath ? 6 : 5
       );
 
