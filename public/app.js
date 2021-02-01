@@ -94,91 +94,94 @@ class StyleManager {
 }
 
 class LocalStore {
-// 20210119093326
-// https://raw.githubusercontent.com/jakearchibald/idb-keyval/master/dist/iife/index-min.js
-  idbKeyval = (function (t) {
-    "use strict";
-    function e(t) {
-      return new Promise((e, n) => {
-        (t.oncomplete = t.onsuccess = () => e(t.result)),
-          (t.onabort = t.onerror = () => n(t.error));
-      });
-    }
-    function n(t, n) {
-      const r = indexedDB.open(t);
-      r.onupgradeneeded = () => r.result.createObjectStore(n);
-      const o = e(r);
-      return (t, e) => o.then(r => e(r.transaction(n, t).objectStore(n)));
-    }
-    let r;
-    function o() {
-      return r || (r = n("keyval-store", "keyval")), r;
-    }
-    function u(t, n) {
-      return t(
-        "readonly",
-        t => (
-          (t.openCursor().onsuccess = function () {
-            this.result && (n(this.result), this.result.continue());
-          }),
-          e(t.transaction)
-        )
+  constructor() {
+    // 20210119093326
+    // https://raw.githubusercontent.com/jakearchibald/idb-keyval/master/dist/iife/index-min.js
+    this.idbKeyval = (function (t) {
+      "use strict";
+      function e(t) {
+        return new Promise((e, n) => {
+          (t.oncomplete = t.onsuccess = () => e(t.result)),
+            (t.onabort = t.onerror = () => n(t.error));
+        });
+      }
+      function n(t, n) {
+        const r = indexedDB.open(t);
+        r.onupgradeneeded = () => r.result.createObjectStore(n);
+        const o = e(r);
+        return (t, e) => o.then(r => e(r.transaction(n, t).objectStore(n)));
+      }
+      let r;
+      function o() {
+        return r || (r = n("keyval-store", "keyval")), r;
+      }
+      function u(t, n) {
+        return t(
+          "readonly",
+          t => (
+            (t.openCursor().onsuccess = function () {
+              this.result && (n(this.result), this.result.continue());
+            }),
+            e(t.transaction)
+          )
+        );
+      }
+      return (
+        (t.clear = function (t = o()) {
+          return t("readwrite", t => (t.clear(), e(t.transaction)));
+        }),
+        (t.createStore = n),
+        (t.del = function (t, n = o()) {
+          return n("readwrite", n => (n.delete(t), e(n.transaction)));
+        }),
+        (t.entries = function (t = o()) {
+          const e = [];
+          return u(t, t => e.push([t.key, t.value])).then(() => e);
+        }),
+        (t.get = function (t, n = o()) {
+          return n("readonly", n => e(n.get(t)));
+        }),
+        (t.getMany = function (t, n = o()) {
+          return n("readonly", n => Promise.all(t.map(t => e(n.get(t)))));
+        }),
+        (t.keys = function (t = o()) {
+          const e = [];
+          return u(t, t => e.push(t.key)).then(() => e);
+        }),
+        (t.promisifyRequest = e),
+        (t.set = function (t, n, r = o()) {
+          return r("readwrite", r => (r.put(n, t), e(r.transaction)));
+        }),
+        (t.setMany = function (t, n = o()) {
+          return n(
+            "readwrite",
+            n => (t.forEach(t => n.put(t[1], t[0])), e(n.transaction))
+          );
+        }),
+        (t.update = function (t, n, r = o()) {
+          return r(
+            "readwrite",
+            r =>
+              new Promise((o, u) => {
+                r.get(t).onsuccess = function () {
+                  try {
+                    r.put(n(this.result), t), o(e(r.transaction));
+                  } catch (t) {
+                    u(t);
+                  }
+                };
+              })
+          );
+        }),
+        (t.values = function (t = o()) {
+          const e = [];
+          return u(t, t => e.push(t.value)).then(() => e);
+        }),
+        t
       );
-    }
-    return (
-      (t.clear = function (t = o()) {
-        return t("readwrite", t => (t.clear(), e(t.transaction)));
-      }),
-      (t.createStore = n),
-      (t.del = function (t, n = o()) {
-        return n("readwrite", n => (n.delete(t), e(n.transaction)));
-      }),
-      (t.entries = function (t = o()) {
-        const e = [];
-        return u(t, t => e.push([t.key, t.value])).then(() => e);
-      }),
-      (t.get = function (t, n = o()) {
-        return n("readonly", n => e(n.get(t)));
-      }),
-      (t.getMany = function (t, n = o()) {
-        return n("readonly", n => Promise.all(t.map(t => e(n.get(t)))));
-      }),
-      (t.keys = function (t = o()) {
-        const e = [];
-        return u(t, t => e.push(t.key)).then(() => e);
-      }),
-      (t.promisifyRequest = e),
-      (t.set = function (t, n, r = o()) {
-        return r("readwrite", r => (r.put(n, t), e(r.transaction)));
-      }),
-      (t.setMany = function (t, n = o()) {
-        return n(
-          "readwrite",
-          n => (t.forEach(t => n.put(t[1], t[0])), e(n.transaction))
-        );
-      }),
-      (t.update = function (t, n, r = o()) {
-        return r(
-          "readwrite",
-          r =>
-            new Promise((o, u) => {
-              r.get(t).onsuccess = function () {
-                try {
-                  r.put(n(this.result), t), o(e(r.transaction));
-                } catch (t) {
-                  u(t);
-                }
-              };
-            })
-        );
-      }),
-      (t.values = function (t = o()) {
-        const e = [];
-        return u(t, t => e.push(t.value)).then(() => e);
-      }),
-      t
-    );
-  })({});
+    })({});
+    this.load();
+  }
 
   save() {
     this.idbKeyval.set("roamhusk.srdata", roamhusk.nodes)
@@ -215,25 +218,28 @@ class FirebaseStore {
       const userId = firebase.auth().currentUser.uid;
       this.databaseRef = firebase.database().ref(`users/${userId}`);
     })
-  }
-
-  save() {
-    this.databaseRef.set({
-      nodes: roamhusk.nodes
-    });
+    this.loading = this.load();
   }
 
   async load() {
     await this.init;
     localNodes = await roamhusk.localStore.load();
     firebaseNodes = await this.databaseRef.once("value").then(snapshot => snapshot.val().nodes);
+    console(`loaded ${localNodes.length} nodes from local storage, ${firebaseNodes.length} nodes from firebase`);
     return firebaseNodes.length === 0 ? localNodes : firebaseNodes;
+  }
+
+  async save() {
+    await this.loading;
+    this.databaseRef.set({
+      nodes: roamhusk.nodes
+    });
   }
 }
 
 roamhusk.style = new StyleManager();
-roamhusk.store = new FirebaseStore();
 roamhusk.localStore = new LocalStore(); // used to upgrade to hosted store
+roamhusk.store = new FirebaseStore();
 
 // Remove element by id
 roamhusk.removeId = id => {
