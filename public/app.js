@@ -190,7 +190,7 @@ class LocalStore {
   }
 
   async load() {
-    return await this.idbKeyval.get("roamhusk.srdata") || [];
+    return await this.idbKeyval.get("roamhusk.srdata") || {};
   }
 }
 
@@ -228,9 +228,8 @@ class FirebaseStore {
   async load() {
     await this.init;
     const localNodes = await roamhusk.localStore.load();
-    const firebaseNodes = await this.databaseRef.once("value").then(snapshot => snapshot.val()?.nodes || []);
-    console.log(`loaded ${localNodes.length} nodes from local storage, ${firebaseNodes.length} nodes from firebase`);
-    return firebaseNodes.length === 0 ? localNodes : firebaseNodes;
+    const firebaseNodes = await this.databaseRef.once("value").then(snapshot => snapshot.val()?.nodes || {});
+    return Object.keys(firebaseNodes).length === 0 ? localNodes : firebaseNodes;
   }
 
   async save() {
