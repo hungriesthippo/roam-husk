@@ -2,8 +2,6 @@ if (!window.roamhusk) {
   window.roamhusk = {};
 }
 
-roamhusk.style = new StyleManager();
-
 class StyleManager {
   styleSheet;
   hideTagsRule = null;
@@ -95,6 +93,147 @@ class StyleManager {
   }
 }
 
+class LocalStore {
+// 20210119093326
+// https://raw.githubusercontent.com/jakearchibald/idb-keyval/master/dist/iife/index-min.js
+  idbKeyval = (function (t) {
+    "use strict";
+    function e(t) {
+      return new Promise((e, n) => {
+        (t.oncomplete = t.onsuccess = () => e(t.result)),
+          (t.onabort = t.onerror = () => n(t.error));
+      });
+    }
+    function n(t, n) {
+      const r = indexedDB.open(t);
+      r.onupgradeneeded = () => r.result.createObjectStore(n);
+      const o = e(r);
+      return (t, e) => o.then(r => e(r.transaction(n, t).objectStore(n)));
+    }
+    let r;
+    function o() {
+      return r || (r = n("keyval-store", "keyval")), r;
+    }
+    function u(t, n) {
+      return t(
+        "readonly",
+        t => (
+          (t.openCursor().onsuccess = function () {
+            this.result && (n(this.result), this.result.continue());
+          }),
+          e(t.transaction)
+        )
+      );
+    }
+    return (
+      (t.clear = function (t = o()) {
+        return t("readwrite", t => (t.clear(), e(t.transaction)));
+      }),
+      (t.createStore = n),
+      (t.del = function (t, n = o()) {
+        return n("readwrite", n => (n.delete(t), e(n.transaction)));
+      }),
+      (t.entries = function (t = o()) {
+        const e = [];
+        return u(t, t => e.push([t.key, t.value])).then(() => e);
+      }),
+      (t.get = function (t, n = o()) {
+        return n("readonly", n => e(n.get(t)));
+      }),
+      (t.getMany = function (t, n = o()) {
+        return n("readonly", n => Promise.all(t.map(t => e(n.get(t)))));
+      }),
+      (t.keys = function (t = o()) {
+        const e = [];
+        return u(t, t => e.push(t.key)).then(() => e);
+      }),
+      (t.promisifyRequest = e),
+      (t.set = function (t, n, r = o()) {
+        return r("readwrite", r => (r.put(n, t), e(r.transaction)));
+      }),
+      (t.setMany = function (t, n = o()) {
+        return n(
+          "readwrite",
+          n => (t.forEach(t => n.put(t[1], t[0])), e(n.transaction))
+        );
+      }),
+      (t.update = function (t, n, r = o()) {
+        return r(
+          "readwrite",
+          r =>
+            new Promise((o, u) => {
+              r.get(t).onsuccess = function () {
+                try {
+                  r.put(n(this.result), t), o(e(r.transaction));
+                } catch (t) {
+                  u(t);
+                }
+              };
+            })
+        );
+      }),
+      (t.values = function (t = o()) {
+        const e = [];
+        return u(t, t => e.push(t.value)).then(() => e);
+      }),
+      t
+    );
+  })({});
+
+  save() {
+    this.idbKeyval.set("roamhusk.srdata", roamhusk.nodes)
+      .then(e => console.log("Successfully saved"))
+      .catch(e => console.error("Problem saving nodes", e));
+  }
+
+  load() {
+    return this.idbKeyval.get("roamhusk.srdata");
+  }
+}
+
+class FirebaseStore {
+  // TODO: Update nodes from realtime updates.
+  constructor() {
+    const body = document.getElementsByTagName('body')[0];
+    const script = document.createElement("script");
+    script.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-app.js";
+    body.appendChild(script);
+    const scriptAuth = document.createElement("script");
+    script.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-auth.js";
+    body.appendChild(scriptAuth);
+    const scriptDb = document.createElement("script");
+    scriptDb.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-database.js";
+    body.appendChild(scriptDb);
+    const appLoad = new Promise(resolve => { script.onload = () => resolve()});
+    const authLoad = new Promise(resolve => { scriptAuth.onload = () => resolve()});
+    const dbLoad = new Promise(resolve => { scriptDb.onload = () => resolve()});
+    this.init = Promise.all([appLoad, authLoad, dbLoad]).then(() => {
+      firebase.initializeApp({
+        authDomain: "roamhusk.firebaseapp.com",
+        databaseURL: "https://roamhusk-default-rtdb.firebaseio.com/"
+      });
+      const userId = firebase.auth().currentUser.uid;
+      this.databaseRef = firebase.database().ref(`users/${userId}`);
+    })
+  }
+
+  save() {
+    this.databaseRef.set({
+      nodes: roamhusk.nodes
+    });
+  }
+
+  async load() {
+    await this.init;
+    localNodes = await roamhusk.localStore.load();
+    firebaseNodes = await this.databaseRef.once("value").then(snapshot => snapshot.val().nodes);
+    return firebaseNodes.length === 0 ? localNodes : firebaseNodes;
+  }
+}
+
+roamhusk.style = new StyleManager();
+roamhusk.store = new FirebaseStore();
+roamhusk.localStore = new LocalStore(); // used to upgrade to hosted store
 
 // Remove element by id
 roamhusk.removeId = id => {
@@ -179,91 +318,6 @@ roamhusk.getNewParameters = (node, signal) => {
   return { ...node, interval: newInterval, factor: newFactor, due: newDue };
 };
 
-// 20210119093326
-// https://raw.githubusercontent.com/jakearchibald/idb-keyval/master/dist/iife/index-min.js
-roamhusk.idbKeyval = (function (t) {
-  "use strict";
-  function e(t) {
-    return new Promise((e, n) => {
-      (t.oncomplete = t.onsuccess = () => e(t.result)),
-        (t.onabort = t.onerror = () => n(t.error));
-    });
-  }
-  function n(t, n) {
-    const r = indexedDB.open(t);
-    r.onupgradeneeded = () => r.result.createObjectStore(n);
-    const o = e(r);
-    return (t, e) => o.then(r => e(r.transaction(n, t).objectStore(n)));
-  }
-  let r;
-  function o() {
-    return r || (r = n("keyval-store", "keyval")), r;
-  }
-  function u(t, n) {
-    return t(
-      "readonly",
-      t => (
-        (t.openCursor().onsuccess = function () {
-          this.result && (n(this.result), this.result.continue());
-        }),
-        e(t.transaction)
-      )
-    );
-  }
-  return (
-    (t.clear = function (t = o()) {
-      return t("readwrite", t => (t.clear(), e(t.transaction)));
-    }),
-    (t.createStore = n),
-    (t.del = function (t, n = o()) {
-      return n("readwrite", n => (n.delete(t), e(n.transaction)));
-    }),
-    (t.entries = function (t = o()) {
-      const e = [];
-      return u(t, t => e.push([t.key, t.value])).then(() => e);
-    }),
-    (t.get = function (t, n = o()) {
-      return n("readonly", n => e(n.get(t)));
-    }),
-    (t.getMany = function (t, n = o()) {
-      return n("readonly", n => Promise.all(t.map(t => e(n.get(t)))));
-    }),
-    (t.keys = function (t = o()) {
-      const e = [];
-      return u(t, t => e.push(t.key)).then(() => e);
-    }),
-    (t.promisifyRequest = e),
-    (t.set = function (t, n, r = o()) {
-      return r("readwrite", r => (r.put(n, t), e(r.transaction)));
-    }),
-    (t.setMany = function (t, n = o()) {
-      return n(
-        "readwrite",
-        n => (t.forEach(t => n.put(t[1], t[0])), e(n.transaction))
-      );
-    }),
-    (t.update = function (t, n, r = o()) {
-      return r(
-        "readwrite",
-        r =>
-          new Promise((o, u) => {
-            r.get(t).onsuccess = function () {
-              try {
-                r.put(n(this.result), t), o(e(r.transaction));
-              } catch (t) {
-                u(t);
-              }
-            };
-          })
-      );
-    }),
-    (t.values = function (t = o()) {
-      const e = [];
-      return u(t, t => e.push(t.value)).then(() => e);
-    }),
-    t
-  );
-})({});
 
 // --- Default settings ---
 roamhusk.defaultFactor = 2.5;
@@ -470,24 +524,12 @@ roamhusk.loadNodes = () => {
   roamhusk.parseNodes(roamhusk.getNodes());
 };
 
-roamhusk.save = () => {
-  roamhusk.idbKeyval
-    .set("roamhusk.srdata", roamhusk.nodes)
-    .then(e => console.log("Successfully saved"))
-    .catch(e => console.error("Problem saving nodes", e));
-};
-
-roamhusk.load = () => {
-  roamhusk.idbKeyval
-    .get("roamhusk.srdata")
-    .then(e => {
-      console.log("Successfully loaded");
-      roamhusk.nodes = e;
-    })
-    .catch(e => console.error("Problem loading nodes", e));
-};
-
-roamhusk.load();
+roamhusk.store.load()
+  .then(e => {
+    console.log("Successfully loaded");
+    roamhusk.nodes = e;
+  })
+  .catch(e => console.error("Problem loading nodes", e));
 
 roamhusk.letsGo = () => {
   if (roamhusk.active) {
@@ -504,7 +546,7 @@ roamhusk.letsGo = () => {
     roamhusk.originalURL
   );
   roamhusk.loadNodes();
-  roamhusk.save();
+  roamhusk.store.save();
   roamhusk.getSortedDueCards(roamhusk.nodes);
   roamhusk.showCard();
 };
@@ -717,7 +759,7 @@ roamhusk.onFile = e => {
           newNodes[x].due = new Date(newNodes[x].due);
         });
         roamhusk.nodes = newNodes;
-        roamhusk.save();
+        roamhusk.store.save();
         console.log(`Successfully loaded ${newNodes.length} nodes`);
         roamhusk.currentCard = 0;
         roamhusk.cardsToReview = roamhusk.getSortedDueCards();
@@ -764,7 +806,7 @@ roamhusk.processAnswer = key => {
   }
 
   console.log(`After responding ${parseInt(key, 10)}: `, roamhusk.nodes[uid]);
-  roamhusk.save();
+  roamhusk.store.save();
   roamhusk.currentCard += 1;
   if (roamhusk.currentCard === roamhusk.cardsToReview.length) {
     console.log("All cards due reviewed");
