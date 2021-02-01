@@ -189,8 +189,8 @@ class LocalStore {
       .catch(e => console.error("Problem saving nodes", e));
   }
 
-  load() {
-    return this.idbKeyval.get("roamhusk.srdata");
+  async load() {
+    return await this.idbKeyval.get("roamhusk.srdata") || [];
   }
 }
 
@@ -198,34 +198,38 @@ class FirebaseStore {
   // TODO: Update nodes from realtime updates.
   constructor() {
     const body = document.getElementsByTagName('body')[0];
-    const script = document.createElement("script");
-    script.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-app.js";
-    body.appendChild(script);
+    const scriptApp = document.createElement("script");
+    scriptApp.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-app.js";
+    body.appendChild(scriptApp);
     const scriptAuth = document.createElement("script");
-    script.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-auth.js";
+    scriptAuth.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-auth.js";
     body.appendChild(scriptAuth);
     const scriptDb = document.createElement("script");
     scriptDb.src = "https://www.gstatic.com/firebasejs/8.2.5/firebase-database.js";
     body.appendChild(scriptDb);
-    const appLoad = new Promise(resolve => { script.onload = () => resolve()});
+    const appLoad = new Promise(resolve => { scriptApp.onload = () => resolve()});
     const authLoad = new Promise(resolve => { scriptAuth.onload = () => resolve()});
     const dbLoad = new Promise(resolve => { scriptDb.onload = () => resolve()});
-    this.init = Promise.all([appLoad, authLoad, dbLoad]).then(() => {
+    const signIn = async () => {
       firebase.initializeApp({
+        apiKey: "AIzaSyDQTr17jlMuHqINMTBlmR6ANk680I_hoFg",
         authDomain: "roamhusk.firebaseapp.com",
         databaseURL: "https://roamhusk-default-rtdb.firebaseio.com/"
       });
-      const userId = firebase.auth().currentUser.uid;
-      this.databaseRef = firebase.database().ref(`users/${userId}`);
-    })
+      if (!firebase.auth().currentUser) {
+        await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider);
+      }
+      this.databaseRef = firebase.database().ref(`users/${firebase.auth().currentUser.uid}`);
+    };
+    this.init = Promise.all([appLoad, authLoad, dbLoad]).then(() => signIn());
     this.loading = this.load();
   }
 
   async load() {
     await this.init;
-    localNodes = await roamhusk.localStore.load();
-    firebaseNodes = await this.databaseRef.once("value").then(snapshot => snapshot.val().nodes);
-    console(`loaded ${localNodes.length} nodes from local storage, ${firebaseNodes.length} nodes from firebase`);
+    const localNodes = await roamhusk.localStore.load();
+    const firebaseNodes = await this.databaseRef.once("value").then(snapshot => snapshot.val()?.nodes || []);
+    console.log(`loaded ${localNodes.length} nodes from local storage, ${firebaseNodes.length} nodes from firebase`);
     return firebaseNodes.length === 0 ? localNodes : firebaseNodes;
   }
 
