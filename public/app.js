@@ -44,14 +44,14 @@ class StyleManager {
 
   start() {
     this.clear();
-    this.hideTagsRule = this.insertRule(
+    this.hideTagsRule = this.addRule(
       `.roam-body-main [data-link-title^="[[interval]]:"], [data-tag="sr"], [data-link-title^="[[factor]]:"] {
       display: none;}`);
-    this.topbarRule = this.insertRule(this.getTopbarRule('lightblue'));
-    this.hideDatesRule = this.insertRule(
+    this.topbarRule = this.addRule(this.getTopbarRule('lightblue'));
+    this.hideDatesRule = this.addRule(
       `.roam-body-main [data-link-title^="January"], [data-link-title^="February"], [data-link-title^="March"], [data-link-title^="April"], [data-link-title^="May"], [data-link-title^="June"], [data-link-title^="July"], [data-link-title^="August"], [data-link-title^="September"], [data-link-title^="October"], [data-link-title^="November"], [data-link-title^="December"] {
       display: none;}`);
-    this.attrRule = this.insertRule(".rm-attr-ref { font-size: 14px !important }");
+    this.attrRule = this.addRule(".rm-attr-ref { font-size: 14px !important }");
 
     // document.querySelector(".bp3-button + div").innerText =
     //   "Roam Husk review session started. x to exit";
@@ -66,17 +66,15 @@ class StyleManager {
     this.styleSheet.insertRule(value, rule)
   }
 
-  insertRule(value) {
-    this.styleSheet.insertRule(value);
-    return this.styleSheet.rules.length;
+  addRule(value) {
+    const newIndex = this.styleSheet.rules.length;
+    this.styleSheet.insertRule(value, newIndex);
+    return newIndex;
   }
 
   deleteRule(rule) {
     if (rule !== null) {
-      // deletions may still fail, possibly related to issue #3
-      try {
-        this.styleSheet.deleteRule(rule);
-      } catch (e) {}
+      this.styleSheet.deleteRule(rule);
     }
   }
 
@@ -92,15 +90,15 @@ class StyleManager {
   }
 
   hidePath() {
-    this.hidePathRule = this.insertRule(".roam-body-main .zoom-path-view { display: none; }");
+    this.hidePathRule = this.addRule(".roam-body-main .zoom-path-view { display: none; }");
   }
 
   hideAnswer() {
-    this.hideAnswerRule = this.insertRule(".roam-body-main .roam-block-container>.rm-block-children { visibility: hidden }");
+    this.hideAnswerRule = this.addRule(".roam-body-main .roam-block-container>.rm-block-children { visibility: hidden }");
   }
 
   hideAttribute() {
-    this.hideAttributeRule = this.insertRule(".roam-body-main .roam-block-container span { visibility: hidden }");
+    this.hideAttributeRule = this.addRule(".roam-body-main .roam-block-container span { visibility: hidden }");
   }
 }
 
