@@ -99,7 +99,6 @@ class StyleManager {
       this.activeRules.splice(index, 1);
     }
   }
-
 }
 
 class LocalStore {
@@ -192,7 +191,11 @@ class LocalStore {
     this.load();
   }
 
-  save() {
+  save(uid) {
+    this.saveAll();
+  }
+
+  saveAll() {
     this.idbKeyval.set("roamhusk.srdata", roamhusk.nodes)
       .then(e => console.log("Successfully saved"))
       .catch(e => console.error("Problem saving nodes", e));
@@ -236,12 +239,17 @@ class FirebaseStore {
 
   async load() {
     await this.init;
-    const localNodes = await roamhusk.localStore.load();
     const firebaseNodes = await this.databaseRef.once("value").then(snapshot => snapshot.val()?.nodes || {});
-    return Object.keys(firebaseNodes).length === 0 ? localNodes : firebaseNodes;
+    const backupNodes = await roamhusk.backupStore.load();
+    return Object.keys(firebaseNodes).length === 0 ? backupNodes : firebaseNodes;
   }
 
-  async save() {
+  async save(uid) {
+    // TODO: save just the node.
+    await this.saveAll(uid);
+  }
+
+  async saveAll() {
     await this.loading;
     this.databaseRef.set({
       nodes: roamhusk.nodes
@@ -249,9 +257,86 @@ class FirebaseStore {
   }
 }
 
+class RoamStore {
+  constructor() {
+    this.dataPageUid = null;
+  }
+
+  async load() {
+    const nodes = {};
+    const storedNodes = await this.getRoamData();
+    const backupNodes = await roamhusk.backupStore.load();
+    if (storedNodes.length === 0) return backupNodes;
+    storedNodes.forEach(node => nodes[node.uid] = node);
+    return nodes;
+  }
+
+  // TODO: avoid calling this in favor of saveNode()
+  async saveAll() {
+    roamhusk.nodes.forEach(node => await this.saveNode(node.uid));
+  }
+
+  async save(uid) {
+    const storedNodes = await getRoamData();
+    const storeUid = roamhusk.nodes[uid].storeUid;
+    const nodeString = this.nodeToString(nodes[uid]);
+    if (storeUid && storedNodes.find(node => node.storeUid === storeUid)) {
+      roamAlphaAPI.updateBlock({ block: { uid: storeUid, string: nodeString } });
+    } else {
+      const pageUid = await this.getOrCreateDataPage();
+      roamAlphaAPI.createBlock({
+        location: {
+          "parent-uid": pageUid,
+          order: 0
+        },
+        block: { string: nodeString }
+      });
+      await new Promise(r => setTimeout(r, 100));
+      roamhusk.nodes[uid].storeUid = getRoamData().find(node => node.uid === uid).storeUid;
+    }
+  }
+
+  async getRoamData() {
+    const pageUid = await this.getOrCreateDataPage();
+    return roamAlphaAPI.q(`[:find (pull ?e [:block/uid :block/string {:block/children}]) :where [?e :block/uid "${pageUid}"]]`)[0][0].children
+      .map(this.dataBlockToNode);
+  }
+
+  async getOrCreateDataPage() {
+    // cache the page uid since it should never change
+    if (this.dataPageUid) return this.dataPageUid;
+    const title = "roam/husk/data"
+    const pageResults = roamAlphaAPI.q(`[:find (pull ?e [:block/uid]) :where [?e :node/title "${title}"]]`);
+    if (pageResults.length === 0) {
+      roamAlphaAPI.createPage({ page: { title } });
+      await new Promise(r => setTimeout(r, 100));
+      pageResults = roamAlphaAPI.q(`[:find (pull ?e [:block/uid]) :where [?e :node/title "${title}"]]`);
+    }
+    this.dataPageUid = pageResults[0][0].uid;
+    return this.dataPageUid;
+  }
+
+  dataBlockToNode(block) {
+    const row = block.string.split(",");
+    // TODO: needs string?
+    return {
+      uid: row[0],
+      factor: row[1],
+      interval: row[2],
+      due: row[3],
+      disabled: row[4],
+      storeUid: block.uid
+    }
+  }
+
+  nodeToString(node) {
+    return `${node.uid},${node.factor},${node.interval},${node.due},${node.disabled}`;
+  }
+}
+
 roamhusk.style = new StyleManager();
-roamhusk.localStore = new LocalStore(); // used to upgrade to hosted store
-roamhusk.store = new FirebaseStore();
+roamhusk.backupStore = new LocalStore(); // used to upgrade to hosted store
+roamhusk.store = new RoamStore();
 
 // Remove element by id
 roamhusk.removeId = id => {
@@ -560,7 +645,7 @@ roamhusk.letsGo = () => {
     roamhusk.originalURL
   );
   roamhusk.loadNodes();
-  roamhusk.store.save();
+  roamhusk.store.saveAll(); // TODO: can this be avoided?
   roamhusk.getSortedDueCards(roamhusk.nodes);
   roamhusk.showCard();
 };
@@ -772,7 +857,7 @@ roamhusk.onFile = e => {
       newNodes = JSON.parse(reader.result);
       if (Object.values(newNodes)[0].interval) {
         roamhusk.nodes = roamhusk.convertLegacyDates(newNodes);
-        roamhusk.store.save();
+        roamhusk.store.saveAll();
         console.log(`Successfully loaded ${newNodes.length} nodes`);
         roamhusk.currentCard = 0;
         roamhusk.cardsToReview = roamhusk.getSortedDueCards();
@@ -819,7 +904,7 @@ roamhusk.processAnswer = key => {
   }
 
   console.log(`After responding ${parseInt(key, 10)}: `, roamhusk.nodes[uid]);
-  roamhusk.store.save();
+  roamhusk.store.save(uid);
   roamhusk.currentCard += 1;
   if (roamhusk.currentCard === roamhusk.cardsToReview.length) {
     console.log("All cards due reviewed");
