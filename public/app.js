@@ -73,7 +73,10 @@ class StyleManager {
 
   deleteRule(rule) {
     if (rule !== null) {
-      this.styleSheet.deleteRule(rule);
+      // deletions may still fail, possibly related to issue #3
+      try {
+        this.styleSheet.deleteRule(rule);
+      } catch (e) {}
     }
   }
 
