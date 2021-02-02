@@ -271,9 +271,11 @@ class RoamStore {
     return nodes;
   }
 
-  // TODO: avoid calling this in favor of saveNode()
+  // TODO: avoid calling this in favor of save()
   async saveAll() {
-    roamhusk.nodes.forEach(node => (await this.saveNode(node.uid)));
+    roamhusk.nodes.forEach(node => {
+      await this.save(node.uid):
+    });
   }
 
   async save(uid) {
