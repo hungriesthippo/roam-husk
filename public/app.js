@@ -9,13 +9,16 @@ roamhusk.cardMode = {
 
 class StyleManager {
   styleSheet;
-  hideTagsRule = null;
-  hideDatesRule = null;
-  topbarRule = null;
-  attrRule = null;
-  hidePathRule = null;
-  hideAnswerRule = null;
-  hideAttributeRule = null;
+  rules = {
+    HIDE_TAGS: 0,
+    HIDE_DATE: 1,
+    TOPBAR: 2,
+    ATTRIBUTE: 3, 
+    HIDE_PATH: 4,
+    HIDE_ANSWER: 5, 
+    HIDE_ATTRIBUTE: 6
+  }
+  activeRules = [];
 
   constructor() {
     const style = document.createElement("style");
@@ -25,28 +28,45 @@ class StyleManager {
   }
 
   clear() {
-    try {
-      new Array(this.styleSheet.rules.length)
-        .fill("")
-        .forEach(() => this.styleSheet.deleteRule(0));
-    } catch (e) {
-      console.warn("Could not delete stylesheet");
-    }
+    this.activeRules.forEach(rule => this.deleteRule(rule));
   };
 
   start() {
     this.clear();
-    this.hideTagsRule = this.addRule(
+    this.addRule(this.rules.HIDE_TAGS,
       `.roam-body-main [data-link-title^="[[interval]]:"], [data-tag="sr"], [data-link-title^="[[factor]]:"] {
       display: none;}`);
-    this.topbarRule = this.addRule(this.getTopbarRule('lightblue'));
-    this.hideDatesRule = this.addRule(
+    this.addRule(this.rules.TOPBAR, this.getTopbarRule('lightblue'));
+    this.addRule(this.rules.HIDE_DATE,
       `.roam-body-main [data-link-title^="January"], [data-link-title^="February"], [data-link-title^="March"], [data-link-title^="April"], [data-link-title^="May"], [data-link-title^="June"], [data-link-title^="July"], [data-link-title^="August"], [data-link-title^="September"], [data-link-title^="October"], [data-link-title^="November"], [data-link-title^="December"] {
       display: none;}`);
-    this.attrRule = this.addRule(".rm-attr-ref { font-size: 14px !important }");
+    this.addRule(this.rules.ATTRIBUTE, ".rm-attr-ref { font-size: 14px !important }");
 
     // document.querySelector(".bp3-button + div").innerText =
     //   "Roam Husk review session started. x to exit";
+  }
+
+  showCard(mode) {
+    const bgColor = mode === roamhusk.cardMode.FI ? '#acdeac' : 'lightblue';
+    this.updateRule(this.rules.TOPBAR, this.getTopbarRule(bgColor));
+  }
+
+  showAnswer() {
+    this.deleteRule(this.rules.HIDE_PATH);
+    this.deleteRule(this.rules.HIDE_ANSWER);
+    this.deleteRule(this.rules.HIDE_ATTRIBUTE);
+  }
+
+  hidePath() {
+    this.addRule(this.rules.HIDE_PATH, ".roam-body-main .zoom-path-view { display: none; }");
+  }
+
+  hideAnswer() {
+    this.addRule(this.rules.HIDE_ANSWER, ".roam-body-main .roam-block-container>.rm-block-children { visibility: hidden }");
+  }
+
+  hideAttribute() {
+    this.addRule(this.rules.HIDE_ATTRIBUTE, ".roam-body-main .roam-block-container span { visibility: hidden }");
   }
 
   getTopbarRule(bgColor) {
@@ -55,43 +75,23 @@ class StyleManager {
 
   updateRule(rule, value) {
     this.deleteRule(rule);
-    this.styleSheet.insertRule(value, rule)
+    this.addRule(rule, value);
   }
 
-  addRule(value) {
+  addRule(rule, value) {
     const newIndex = this.styleSheet.rules.length;
     this.styleSheet.insertRule(value, newIndex);
-    return newIndex;
+    this.activeRules.push(rule);
   }
 
   deleteRule(rule) {
-    if (rule !== null) {
+    const index = this.activeRules.indexOf(rule);
+    if (index >= 0) {
       this.styleSheet.deleteRule(rule);
+      this.activeRules.splice(index, 1);
     }
   }
 
-  showCard(mode) {
-    const bgColor = mode === roamhusk.cardMode.FI ? '#acdeac' : 'lightblue';
-    this.updateRule(this.topbarRule, this.getTopbarRule(bgColor));
-  }
-
-  showAnswer() {
-    this.deleteRule(this.hidePathRule);
-    this.deleteRule(this.hideAnswerRule);
-    this.deleteRule(this.hideAttributeRule);
-  }
-
-  hidePath() {
-    this.hidePathRule = this.addRule(".roam-body-main .zoom-path-view { display: none; }");
-  }
-
-  hideAnswer() {
-    this.hideAnswerRule = this.addRule(".roam-body-main .roam-block-container>.rm-block-children { visibility: hidden }");
-  }
-
-  hideAttribute() {
-    this.hideAttributeRule = this.addRule(".roam-body-main .roam-block-container span { visibility: hidden }");
-  }
 }
 
 
