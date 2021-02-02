@@ -2,6 +2,11 @@ if (!window.roamhusk) {
   window.roamhusk = {};
 }
 
+roamhusk.cardMode = {
+  DEFAULT: 0,
+  FI: 1
+}
+
 class StyleManager {
   styleSheet;
   hideTagsRule = null;
@@ -11,11 +16,6 @@ class StyleManager {
   hidePathRule = null;
   hideAnswerRule = null;
   hideAttributeRule = null;
-
-  Mode = {
-    DEFAULT: 0,
-    FI: 1
-  }
 
   constructor() {
     const style = document.createElement("style");
@@ -70,7 +70,7 @@ class StyleManager {
   }
 
   showCard(mode) {
-    const bgColor = mode === this.Mode.DEFAULT ? 'lightblue' : '#acdeac';
+    const bgColor = mode === roamhusk.cardMode.FI ? '#acdeac' : 'lightblue';
     this.updateRule(this.topbarRule, this.getTopbarRule(bgColor));
   }
 
@@ -687,9 +687,9 @@ roamhusk.showCard = () => {
   if (string.includes("#" + roamhusk.fractalInquiryTag + " ")) {
     console.log("fractal", string);
     roamhusk.showAnswer = true;
-    roamhusk.style.showCard(StyleManager.Mode.FI);
+    roamhusk.style.showCard(roamhusk.cardMode.FI);
   } else {
-    roamhusk.style.showCard(StyleManager.Mode.DEFAULT);
+    roamhusk.style.showCard(roamhusk.cardMode.DEFAULT);
   }
 
   // no more cards
