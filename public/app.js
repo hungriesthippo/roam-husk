@@ -190,7 +190,7 @@ class LocalStore {
   }
 
   async load() {
-    return await this.idbKeyval.get("roamhusk.srdata") || {};
+    return roamhusk.convertLegacyDates(await this.idbKeyval.get("roamhusk.srdata")) || {};
   }
 }
 
@@ -244,6 +244,14 @@ roamhusk.style = new StyleManager();
 roamhusk.localStore = new LocalStore(); // used to upgrade to hosted store
 roamhusk.store = new FirebaseStore();
 
+roamhusk.convertLegacyDates = (nodes) => {
+  Object.keys(nodes).forEach(id => {
+    if (nodes[id].due instanceof Date)
+      nodes[id].due = nodes[id].due.getTime();
+  });
+  return nodes;
+}
+
 // Remove element by id
 roamhusk.removeId = id => {
   let element = document.getElementById(id);
@@ -284,11 +292,7 @@ roamhusk.getSetting = settingTitle => {
   return settingValue;
 };
 
-roamhusk.addDays = (date, days) => {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-};
+roamhusk.addDays = (date, days) => date + days*24*60*60*1000;
 
 roamhusk.randomFromInterval = (min, max) => Math.random() * (max - min) + min;
 
@@ -323,7 +327,7 @@ roamhusk.getNewParameters = (node, signal) => {
       newFactor = factor + factorModifier;
       break;
   }
-  const newDue = roamhusk.addDays(new Date(), newInterval);
+  const newDue = roamhusk.addDays(Date.now(), newInterval);
   return { ...node, interval: newInterval, factor: newFactor, due: newDue };
 };
 
@@ -374,7 +378,7 @@ roamhusk.toUSDate = d => {
   return `${da}-${mo}-${ye}`;
 };
 
-roamhusk.parseDate = name => new Date(name.replace(/(th,|nd,|rd,|st,)/, ","));
+roamhusk.parseDate = name => new Date(name.replace(/(th,|nd,|rd,|st,)/, ",")).getTime();
 
 roamhusk.parseNodes = nodes => {
   if (!roamhusk.nodes) {
@@ -407,7 +411,7 @@ roamhusk.parseNodes = nodes => {
       newNodes[node[0]] = {
         interval: 1,
         factor: 2.3,
-        due: new Date(),
+        due: Date.now(),
         uid: node[0],
         string: str
       };
@@ -560,7 +564,9 @@ roamhusk.letsGo = () => {
   roamhusk.showCard();
 };
 
-roamhusk.sameDay = (d1, d2) => {
+roamhusk.sameDay = (t1, t2) => {
+  const d1 = new Date(t1);
+  const d2 = new Date(t2);
   return (
     d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
@@ -599,7 +605,7 @@ roamhusk.formatNode = node =>
   }: ${roamhusk.fixedLength(node.string, 80)}`;
 
 roamhusk.getSortedDueCards = () => {
-  const today = new Date();
+  const today = Date.now();
   const yesterday = roamhusk.addDays(today, -1);
   let todaysCards = [];
   let yesterdaysCards = [];
@@ -764,10 +770,7 @@ roamhusk.onFile = e => {
     try {
       newNodes = JSON.parse(reader.result);
       if (Object.values(newNodes)[0].interval) {
-        Object.keys(newNodes).forEach(x => {
-          newNodes[x].due = new Date(newNodes[x].due);
-        });
-        roamhusk.nodes = newNodes;
+        roamhusk.nodes = roamhusk.convertLegacyDates(newNodes);
         roamhusk.store.save();
         console.log(`Successfully loaded ${newNodes.length} nodes`);
         roamhusk.currentCard = 0;
