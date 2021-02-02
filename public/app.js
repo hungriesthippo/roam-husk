@@ -7,6 +7,14 @@ roamhusk.cardMode = {
   FI: 1
 }
 
+roamhusk.convertLegacyDates = (nodes) => {
+  Object.keys(nodes).forEach(id => {
+    if (nodes[id].due instanceof Date)
+      nodes[id].due = nodes[id].due.getTime();
+  });
+  return nodes;
+}
+
 class StyleManager {
   styleSheet;
   hideTagsRule = null;
@@ -243,14 +251,6 @@ class FirebaseStore {
 roamhusk.style = new StyleManager();
 roamhusk.localStore = new LocalStore(); // used to upgrade to hosted store
 roamhusk.store = new FirebaseStore();
-
-roamhusk.convertLegacyDates = (nodes) => {
-  Object.keys(nodes).forEach(id => {
-    if (nodes[id].due instanceof Date)
-      nodes[id].due = nodes[id].due.getTime();
-  });
-  return nodes;
-}
 
 // Remove element by id
 roamhusk.removeId = id => {
