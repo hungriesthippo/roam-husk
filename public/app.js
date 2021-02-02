@@ -95,7 +95,7 @@ class StyleManager {
   deleteRule(rule) {
     const index = this.activeRules.indexOf(rule);
     if (index >= 0) {
-      this.styleSheet.deleteRule(rule);
+      this.styleSheet.deleteRule(index);
       this.activeRules.splice(index, 1);
     }
   }
