@@ -450,7 +450,7 @@ roamhusk.getParamsFromGraph = () => {
   roamhusk.defaultAnswer = roamhusk.getSetting("defaultAnswer") || "3";
   roamhusk.includeRoamToolkit = roamhusk.getSetting("includeRoamToolkit");
   roamhusk.shouldRemoveInterval = roamhusk.getSetting("removeInterval");
-  roamhusk.forceLocalLoad = !!(roamhusk.getSetting("forceLocalLoad") || "false").match(/true/i);
+  roamhusk.forceLocalLoad = roamhusk.getSetting("forceLocalLoad");
 
   console.log("Settings", {
     defaultHidePath: roamhusk.defaultHidePath,
