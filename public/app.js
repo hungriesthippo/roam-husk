@@ -294,7 +294,7 @@ class RoamStore {
         block: { string: nodeString }
       });
       await new Promise(r => setTimeout(r, 100));
-      roamhusk.nodes[uid].storeUid = getRoamData().find(node => node.uid === uid).storeUid;
+      roamhusk.nodes[uid].storeUid = this.getRoamData().find(node => node.uid === uid).storeUid;
     }
   }
 
@@ -315,6 +315,7 @@ class RoamStore {
       pageResults = roamAlphaAPI.q(`[:find (pull ?e [:block/uid]) :where [?e :node/title "${title}"]]`);
     }
     this.dataPageUid = pageResults[0][0].uid;
+    console.log('found or created data page:', this.dataPageUid);
     return this.dataPageUid;
   }
 
