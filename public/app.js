@@ -308,7 +308,7 @@ class RoamStore {
     // cache the page uid since it should never change
     if (this.dataPageUid) return this.dataPageUid;
     const title = "roam/husk/data"
-    const pageResults = roamAlphaAPI.q(`[:find (pull ?e [:block/uid]) :where [?e :node/title "${title}"]]`);
+    let pageResults = roamAlphaAPI.q(`[:find (pull ?e [:block/uid]) :where [?e :node/title "${title}"]]`);
     if (pageResults.length === 0) {
       roamAlphaAPI.createPage({ page: { title } });
       await new Promise(r => setTimeout(r, 100));
