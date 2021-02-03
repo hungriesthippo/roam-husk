@@ -36,7 +36,9 @@ class StyleManager {
   }
 
   clear() {
-    this.activeRules.forEach(rule => this.deleteRule(rule));
+    while (this.activeRules.length > 0) {
+      this.deleteRule(this.activeRules[this.activeRules.length - 1]);
+    }
   };
 
   start() {
