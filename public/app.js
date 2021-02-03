@@ -279,7 +279,7 @@ class RoamStore {
   }
 
   async save(uid) {
-    const storedNodes = await getRoamData();
+    const storedNodes = await this.getRoamData();
     const storeUid = roamhusk.nodes[uid].storeUid;
     const nodeString = this.nodeToString(nodes[uid]);
     if (storeUid && storedNodes.find(node => node.storeUid === storeUid)) {
