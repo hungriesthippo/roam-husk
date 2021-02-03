@@ -281,7 +281,7 @@ class RoamStore {
   async save(uid) {
     const storedNodes = await this.getRoamData();
     const storeUid = roamhusk.nodes[uid].storeUid;
-    const nodeString = this.nodeToString(nodes[uid]);
+    const nodeString = this.nodeToString(roamhusk.nodes[uid]);
     if (storeUid && storedNodes.find(node => node.storeUid === storeUid)) {
       roamAlphaAPI.updateBlock({ block: { uid: storeUid, string: nodeString } });
     } else {
