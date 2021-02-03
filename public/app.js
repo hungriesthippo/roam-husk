@@ -266,7 +266,7 @@ class RoamStore {
     const nodes = {};
     const storedNodes = await this.getRoamData();
     const backupNodes = await roamhusk.backupStore.load();
-    if (storedNodes.length === 0) return backupNodes;
+    if (storedNodes.length === 0 || roamhusk.forceLocalLoad) return backupNodes;
     storedNodes.forEach(node => nodes[node.uid] = node);
     return nodes;
   }
@@ -279,11 +279,15 @@ class RoamStore {
   }
 
   async save(uid) {
+    const node = roamhusk.nodes[uid];
+    const nodeString = this.nodeToString(node);
     const storedNodes = await this.getRoamData();
-    const storeUid = roamhusk.nodes[uid].storeUid;
-    const nodeString = this.nodeToString(roamhusk.nodes[uid]);
-    if (storeUid && storedNodes.find(node => node.storeUid === storeUid)) {
-      roamAlphaAPI.updateBlock({ block: { uid: storeUid, string: nodeString } });
+    const storedNode = node.storeUid && storedNodes.find(stored => stored.storeUid === node.storeUid);
+    if (storedNode) {
+      if (!this.equalNodes(node, storedNode)) {
+        roamAlphaAPI.updateBlock({ block: { uid: node.storeUid, string: nodeString } });
+        await new Promise(r => setTimeout(r, 250));
+      }
     } else {
       const pageUid = await this.getOrCreateDataPage();
       roamAlphaAPI.createBlock({
@@ -293,10 +297,15 @@ class RoamStore {
         },
         block: { string: nodeString }
       });
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise(r => setTimeout(r, 250)); // avoid rate limiting (300 / 60s)
       const newStoredNodes = await this.getRoamData();
-      roamhusk.nodes[uid].storeUid = newStoredNodes.find(node => node.uid === uid)?.storeUid;
+      roamhusk.nodes[uid].storeUid = newStoredNodes.find(stored => stored.uid === uid)?.storeUid;
+      await new Promise(r => setTimeout(r, 250));
     }
+  }
+
+  equalNodes(node1, node2) {
+    return node1.uid === node2.uid && node1.due === node2.due && node1.interval === node2.interval && node1.factor === node2.factor;
   }
 
   async getRoamData() {
@@ -439,6 +448,7 @@ roamhusk.getParamsFromGraph = () => {
   roamhusk.defaultAnswer = roamhusk.getSetting("defaultAnswer") || "3";
   roamhusk.includeRoamToolkit = roamhusk.getSetting("includeRoamToolkit");
   roamhusk.shouldRemoveInterval = roamhusk.getSetting("removeInterval");
+  roamhusk.forceLocalLoad = !!(roamhusk.getSetting("forceLocalLoad") || "false").match(/true/i);
 
   console.log("Settings", {
     defaultHidePath: roamhusk.defaultHidePath,
