@@ -2,6 +2,101 @@ if (!window.roamhusk) {
   window.roamhusk = {};
 }
 
+roamhusk.cardMode = {
+  DEFAULT: 0,
+  FI: 1
+}
+
+class StyleManager {
+  styleSheet;
+  rules = {
+    HIDE_TAGS: 0,
+    HIDE_DATE: 1,
+    TOPBAR: 2,
+    ATTRIBUTE: 3, 
+    HIDE_PATH: 4,
+    HIDE_ANSWER: 5, 
+    HIDE_ATTRIBUTE: 6
+  }
+  activeRules = [];
+
+  constructor() {
+    const style = document.createElement("style");
+    style.appendChild(document.createTextNode(""));
+    document.head.appendChild(style);
+    this.styleSheet = style.sheet;
+  }
+
+  clear() {
+    while (this.activeRules.length > 0) {
+      this.deleteRule(this.activeRules[this.activeRules.length - 1]);
+    }
+  };
+
+  start() {
+    this.clear();
+    this.addRule(this.rules.HIDE_TAGS,
+      `.roam-body-main [data-link-title^="[[interval]]:"], [data-tag="sr"], [data-link-title^="[[factor]]:"] {
+      display: none;}`);
+    this.addRule(this.rules.TOPBAR, this.getTopbarRule('lightblue'));
+    this.addRule(this.rules.HIDE_DATE,
+      `.roam-body-main [data-link-title^="January"], [data-link-title^="February"], [data-link-title^="March"], [data-link-title^="April"], [data-link-title^="May"], [data-link-title^="June"], [data-link-title^="July"], [data-link-title^="August"], [data-link-title^="September"], [data-link-title^="October"], [data-link-title^="November"], [data-link-title^="December"] {
+      display: none;}`);
+    this.addRule(this.rules.ATTRIBUTE, ".rm-attr-ref { font-size: 14px !important }");
+
+    // document.querySelector(".bp3-button + div").innerText =
+    //   "Roam Husk review session started. x to exit";
+  }
+
+  showCard(mode) {
+    const bgColor = mode === roamhusk.cardMode.FI ? '#acdeac' : 'lightblue';
+    this.updateRule(this.rules.TOPBAR, this.getTopbarRule(bgColor));
+  }
+
+  showAnswer() {
+    this.deleteRule(this.rules.HIDE_PATH);
+    this.deleteRule(this.rules.HIDE_ANSWER);
+    this.deleteRule(this.rules.HIDE_ATTRIBUTE);
+  }
+
+  hidePath() {
+    this.addRule(this.rules.HIDE_PATH, ".roam-body-main .zoom-path-view { display: none; }");
+  }
+
+  hideAnswer() {
+    this.addRule(this.rules.HIDE_ANSWER, ".roam-body-main .roam-block-container>.rm-block-children { visibility: hidden }");
+  }
+
+  hideAttribute() {
+    this.addRule(this.rules.HIDE_ATTRIBUTE, ".roam-body-main .roam-block-container span { visibility: hidden }");
+  }
+
+  getTopbarRule(bgColor) {
+    return `.roam-main .rm-topbar { background-color: ${bgColor} !important }`;
+  }
+
+  updateRule(rule, value) {
+    this.deleteRule(rule);
+    this.addRule(rule, value);
+  }
+
+  addRule(rule, value) {
+    const newIndex = this.styleSheet.rules.length;
+    this.styleSheet.insertRule(value, newIndex);
+    this.activeRules.push(rule);
+  }
+
+  deleteRule(rule) {
+    const index = this.activeRules.indexOf(rule);
+    if (index >= 0) {
+      this.styleSheet.deleteRule(index);
+      this.activeRules.splice(index, 1);
+    }
+  }
+
+}
+
+
 // Remove element by id
 roamhusk.removeId = id => {
   let element = document.getElementById(id);
@@ -202,24 +297,6 @@ roamhusk.getParamsFromGraph = () => {
   });
 };
 
-roamhusk.clearCss = () => {
-  try {
-    new Array(roamhusk.styleSheet.rules.length)
-      .fill("")
-      .forEach(() => roamhusk.styleSheet.deleteRule(0));
-  } catch (e) {}
-};
-
-// create a custom stylesheet
-if (!roamhusk.styleSheet) {
-  roamhusk.style = document.createElement("style");
-  roamhusk.style.appendChild(document.createTextNode(""));
-  document.head.appendChild(roamhusk.style);
-  roamhusk.styleSheet = roamhusk.style.sheet;
-} else {
-  roamhusk.clearCss();
-}
-
 roamhusk.dateRegex = new RegExp(
   /\[\[(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}(st|nd|th|rd), \d{4}]]/gm
 );
@@ -309,7 +386,7 @@ var refreshButton = Object.assign(document.createElement("div"), {
 // Comment/uncomment here for debugging
 roamhusk.addElement(
   refreshButton,
-  document.querySelector(".roam-topbar .flex-h-box")
+  document.querySelector(".rm-topbar")
 );
 
 // --- Main helper functions ---
@@ -356,7 +433,7 @@ toggleModeButton.style.cssText =
 
 roamhusk.addElement(
   toggleModeButton,
-  document.querySelector(".roam-topbar .flex-h-box")
+  document.querySelector(".rm-topbar")
 );
 
 // Make Alt+D leave review mode
@@ -413,32 +490,6 @@ roamhusk.load = () => {
 
 roamhusk.load();
 
-roamhusk.turnOnCss = () => {
-  roamhusk.styleSheet.insertRule(
-    `.roam-body-main [data-link-title^="[[interval]]:"], [data-tag="sr"], [data-link-title^="[[factor]]:"] {
-    display: none;
-}`,
-    0
-  );
-  roamhusk.styleSheet.insertRule(
-    `.roam-main .roam-topbar { background-color: lightblue !important }`,
-    1
-  );
-  roamhusk.styleSheet.insertRule(
-    `.roam-body-main [data-link-title^="January"], [data-link-title^="February"], [data-link-title^="March"], [data-link-title^="April"], [data-link-title^="May"], [data-link-title^="June"], [data-link-title^="July"], [data-link-title^="August"], [data-link-title^="September"], [data-link-title^="October"], [data-link-title^="November"], [data-link-title^="December"] {
-    display: none;
-}`,
-    2
-  );
-  roamhusk.styleSheet.insertRule(
-    ".rm-attr-ref { font-size: 14px !important }",
-    3
-  );
-
-  // document.querySelector(".bp3-button + div").innerText =
-  //   "Roam Husk review session started. x to exit";
-};
-
 roamhusk.letsGo = () => {
   if (roamhusk.active) {
     roamhusk.active = false;
@@ -447,7 +498,7 @@ roamhusk.letsGo = () => {
   }
   document.addEventListener("keyup", roamhusk.processKey);
   roamhusk.active = true;
-  roamhusk.turnOnCss();
+  roamhusk.style.start();
   roamhusk.originalURL = document.location.href;
   console.log(
     "Starting, storing original URL to go back ",
@@ -581,17 +632,9 @@ roamhusk.showCard = () => {
   if (string.includes("#" + roamhusk.fractalInquiryTag + " ")) {
     console.log("fractal", string);
     roamhusk.showAnswer = true;
-    roamhusk.styleSheet.deleteRule(1);
-    roamhusk.styleSheet.insertRule(
-      `.roam-main .roam-topbar { background-color: #acdeac !important }`,
-      1
-    );
+    roamhusk.style.showCard(roamhusk.cardMode.FI);
   } else {
-    roamhusk.styleSheet.deleteRule(1);
-    roamhusk.styleSheet.insertRule(
-      `.roam-main .roam-topbar { background-color: lightblue !important }`,
-      1
-    );
+    roamhusk.style.showCard(roamhusk.cardMode.DEFAULT);
   }
 
   // no more cards
@@ -602,31 +645,17 @@ roamhusk.showCard = () => {
   const showPath = roamhusk.showPathForCard(currentCard, roamhusk.showAnswer);
   // if always show, or the tag that asks us to show, or answer if the tag that asks to show in answer
 
-  try {
-    roamhusk.styleSheet.deleteRule(4);
-    roamhusk.styleSheet.deleteRule(4);
-    roamhusk.styleSheet.deleteRule(4);
-  } catch (e) {}
+  roamhusk.style.showAnswer();
 
   roamhusk.goToUid(roamhusk.cardsToReview[roamhusk.currentCard].uid);
   if (!showPath) {
-    roamhusk.styleSheet.insertRule(
-      ".roam-body-main .zoom-path-view { display: none; }",
-      4
-    );
+    roamhusk.style.hidePath();
   }
   if (!roamhusk.showAnswer) {
-    roamhusk.styleSheet.insertRule(
-      `.roam-body-main .roam-block-container>.rm-block-children { font-size: 0px }`,
-      roamhusk.showPath ? 5 : 4
-    );
+    roamhusk.style.hideAnswer();
 
     if (roamhusk.cardsToReview[roamhusk.currentCard].string.includes("::")) {
-      roamhusk.styleSheet.insertRule(
-        `.roam-body-main .roam-block-container span { font-size: 0px }`,
-        roamhusk.showPath ? 6 : 5
-      );
-
+      roamhusk.style.hideAttribute();
       // document.querySelector(".bp3-button + div").innerText =
       //   "Roam Husk Review Session -- <x> to exit, <1-4> to answer";
     }
@@ -711,16 +740,7 @@ roamhusk.wrapUp = () => {
   document.removeEventListener("keyup", roamhusk.processKey);
   // document.querySelector(".bp3-button + div").innerText = "";
   location.assign(roamhusk.originalURL);
-  try {
-    roamhusk.styleSheet.deleteRule(0);
-    roamhusk.styleSheet.deleteRule(0);
-    roamhusk.styleSheet.deleteRule(0);
-    roamhusk.styleSheet.deleteRule(0);
-    roamhusk.styleSheet.deleteRule(0);
-    roamhusk.styleSheet.deleteRule(0);
-  } catch (e) {
-    console.warn("Could not delete stylesheet", e);
-  }
+  roamhusk.style.clear();
 };
 
 // b to block, 1-4 to answer (1=forgot, 4=easy)
