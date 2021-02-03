@@ -300,8 +300,8 @@ class RoamStore {
 
   async getRoamData() {
     const pageUid = await this.getOrCreateDataPage();
-    return roamAlphaAPI.q(`[:find (pull ?e [{:block/children [:block/uid :block/string]}]) :where [?e :block/uid "${pageUid}"]]`)[0][0].children
-      .map(this.dataBlockToNode);
+    const pageResult = roamAlphaAPI.q(`[:find (pull ?e [:block/uid {:block/children [:block/uid :block/string]}]) :where [?e :block/uid "${pageUid}"]]`)[0][0];
+    return (pageResult?.children || []).map(this.dataBlockToNode);
   }
 
   async getOrCreateDataPage() {
