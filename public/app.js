@@ -569,14 +569,6 @@ roamhusk.goToUid = uid => {
   let url = uid ? baseUrl + "/page/" + uid : baseUrl;
   console.log("Going to uid", uid, url);
   location.assign(url);
-
-  // sometimes changing URL doesn't "stick" so retry
-  window.setTimeout(() => {
-    if (!window.location.href === url) {
-      console.log("Trying to set URL second time");
-      window.location.assign(url);
-    } else { console.log('Arrived') }
-  }, 100);
 };
 
 // Adding buttons to the topbar
@@ -593,6 +585,7 @@ var toggleModeButton = Object.assign(document.createElement("div"), {
 		</svg>`,
   onclick: async () => {
     roamhusk.letsGo();
+    return false;
   }
 });
 toggleModeButton.style.cssText =
