@@ -570,13 +570,13 @@ roamhusk.goToUid = uid => {
   console.log("Going to uid", uid, url);
   location.assign(url);
 
-  // // sometimes changing URL doesn't "stick" so retry
-  // window.setTimeout(() => {
-  //   if (!window.location.href === url) {
-  //     console.log("Trying to set URL second time");
-  //     window.location.assign(url);
-  //   } else { console.log('Arrived') }
-  // }, 100);
+  // sometimes changing URL doesn't "stick" so retry
+  window.setTimeout(() => {
+    if (!window.location.href === url) {
+      console.log("Trying to set URL second time");
+      window.location.assign(url);
+    }
+  }, 1000);
 };
 
 // Adding buttons to the topbar
